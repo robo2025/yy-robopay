@@ -1,0 +1,3 @@
+robopay/.idea/
+robopay/db.sqlite3
+**/*migrations
