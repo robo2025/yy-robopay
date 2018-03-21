@@ -15,7 +15,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
     lookup_field = "order_id"
 
     def list(self, request, *args, **kwargs):
-        serializer = PaymentSerializer(self.queryset, many=True)
+        queryset = Payment.objects.all()
+        serializer = PaymentSerializer(queryset, many=True)
         return Response({
             'status': 'ok',
             'data': serializer.data,

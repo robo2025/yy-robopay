@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db import transaction
 from .models import Payment, UnionPay
 from . import utils
 
@@ -10,8 +11,8 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Payment
-        fields = ('payment_id', 'order_id', 'payment_amount', 'payment_time')
-        read_only_fields = ('payment_id', 'payment_amount', 'payment_time')
+        fields = ('payment_id', 'order_id', 'unionpay_id', 'payment_amount', 'payment_status', 'payment_time')
+        read_only_fields = ('payment_id', 'unionpay_id', 'payment_amount', 'payment_status', 'payment_time')
 
     def create(self, validated_data):
         order_id = validated_data['order_id']
@@ -75,5 +76,16 @@ class UnionPaySerializer(serializers.Serializer):
             unionpay_time=unionpay_time,
         )
 
-        unionpay.save()
+        try:
+            payment = Payment.objects.get(order_id=order_id)
+        except Payment.DoesNotExist:
+            return unionpay
+
+        payment.unionpay_id = unionpay_id
+        payment.payment_status = 'p'
+
+        with transaction.atomic():
+            unionpay.save()
+            payment.save()
+
         return unionpay

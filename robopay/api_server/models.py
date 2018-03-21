@@ -13,6 +13,7 @@ ORDER_CHOICE = (
 class Payment(models.Model):
     payment_id = models.CharField(max_length=30, unique=True, db_index=True)
     order_id = models.CharField(max_length=30, unique=True, db_index=True)
+    unionpay_id = models.CharField(max_length=30, blank=True, null=True, db_index=True)
     payment_amount = models.BigIntegerField()
     payment_status = models.CharField(choices=ORDER_CHOICE, default='n', max_length=5)
     payment_time = models.BigIntegerField()
