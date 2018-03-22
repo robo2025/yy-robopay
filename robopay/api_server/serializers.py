@@ -65,7 +65,7 @@ class UnionPaySerializer(serializers.Serializer):
         unionpay_card = validated_data.get('accNo')
         merchant_id = validated_data.get('merId')
         unionpay_count = int(validated_data.get('settleAmt'))
-        unionpay_time = validated_data.get('traceTime')
+        unionpay_time = validated_data.get('txnTime')
 
         unionpay = UnionPay(
             order_id=order_id,
