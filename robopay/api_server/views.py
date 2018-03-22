@@ -5,8 +5,8 @@ from rest_framework.decorators import detail_route
 import logging
 
 from . import utils
-from .models import Payment
-from .serializers import PaymentSerializer, UnionPaySerializer
+from .models import Payment, Refund
+from .serializers import PaymentSerializer, UnionPaySerializer, RefundSerializer, UnionPayRefundSerializer
 
 
 class PaymentViewSet(viewsets.ModelViewSet):
@@ -115,7 +115,16 @@ class UnionPayBackView(APIView):
                 'error': '银联返回数据验证错误',
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = UnionPaySerializer(data=parse_data)
+        if parse_data['txnType'] == '01':
+            serializer = UnionPaySerializer(data=parse_data)
+        elif parse_data['txnType'] == '04':
+            serializer = UnionPayRefundSerializer(data=parse_data)
+        else:
+            return Response({
+                'status': 'error',
+                'error': '暂未支持的处理类型: '.format(parse_data['txnType']),
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         if serializer.is_valid():
             respCode = serializer.validated_data['respCode']
             if respCode == "00":
@@ -149,3 +158,38 @@ class UnionPayQueryView(APIView):
             'status': 'ok',
             'data': payment_status,
         })
+
+
+class RefundViewSet(viewsets.GenericViewSet):
+    queryset = Refund.objects.all()
+    serializer_class = RefundSerializer
+
+    def list(self, request, *args, **kwargs):
+        queryset = Refund.objects.all()
+        serializer = RefundSerializer(queryset, many=True)
+        return Response({
+            'status': 'ok',
+            'data': serializer.data,
+        })
+
+    def create(self, request, *args, **kwargs):
+        serializer = RefundSerializer(data=request.data)
+        if serializer.is_valid():
+            order_id = serializer.validated_data['order_id']
+            refund_amount = serializer.validated_data['refund_amount']
+            resp_status, resp_data = utils.process_refund(order_id, refund_amount)
+            if resp_status:
+                return Response({
+                    'status': 'ok',
+                    'data': resp_data
+                })
+            else:
+                return Response({
+                    'status': 'error',
+                    'error': resp_data,
+                })
+
+        return Response({
+            'status': 'error',
+            'error': '提交数据异常',
+        }, status=status.HTTP_400_BAD_REQUEST)
