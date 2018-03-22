@@ -16,7 +16,8 @@ class Payment(models.Model):
     unionpay_id = models.CharField(max_length=30, blank=True, null=True, db_index=True)
     payment_amount = models.BigIntegerField()
     payment_status = models.CharField(choices=ORDER_CHOICE, default='n', max_length=5)
-    payment_time = models.BigIntegerField()
+    payment_time = models.CharField(max_length=30, blank=True, null=True)
+    created_time = models.BigIntegerField()
 
     def __str__(self):
         return self.payment_id

@@ -38,13 +38,13 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         order_id = kwargs.get('order_id', '')
-        if not utils.check_order_id(order_id):
+        payment = utils.get_payment_info(order_id)
+        if not payment:
             return Response({
                 'status': 'error',
                 'error': '支付订单未找到',
             }, status=status.HTTP_404_NOT_FOUND)
 
-        payment = self.get_object()
         serializer = PaymentSerializer(payment)
         return Response({
             'status': 'ok',
@@ -55,7 +55,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
     @detail_route()
     def form(self, request, *args, **kwargs):
         order_id = kwargs.get('order_id', '')
-        if not utils.check_order_id(order_id):
+        payment = utils.get_payment_info(order_id)
+        if not payment:
             return Response({
                 'status': 'error',
                 'error': '支付订单未找到',
@@ -75,7 +76,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
     @detail_route(renderer_classes=[renderers.StaticHTMLRenderer])
     def html(self, request, *args, **kwargs):
         order_id = kwargs.get('order_id', '')
-        if not utils.check_order_id(order_id):
+        payment = utils.get_payment_info(order_id)
+        if not payment:
             html_str = "<h1>支付订单未找到</h1>"
             return Response(html_str)
 
@@ -131,3 +133,19 @@ class UnionPayBackView(APIView):
         return Response({
             'status': 'error',
         }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UnionPayQueryView(APIView):
+    def get(self, request, order_id):
+        status, data = utils.process_unionpay_query(order_id)
+        if not status:
+            return Response({
+                'status': 'error',
+                'error': data,
+            })
+
+        payment_status = utils.check_unionpay_payment_status(data)
+        return Response({
+            'status': 'ok',
+            'data': payment_status,
+        })

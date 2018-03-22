@@ -1,3 +1,4 @@
+from time import time
 from rest_framework import serializers
 from django.db import transaction
 from .models import Payment, UnionPay
@@ -11,19 +12,21 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Payment
-        fields = ('payment_id', 'order_id', 'unionpay_id', 'payment_amount', 'payment_status', 'payment_time')
-        read_only_fields = ('payment_id', 'unionpay_id', 'payment_amount', 'payment_status', 'payment_time')
+        fields = ('payment_id', 'order_id', 'unionpay_id', 'payment_amount',
+                  'payment_status', 'payment_time', 'created_time')
+
+        read_only_fields = ('payment_id', 'unionpay_id', 'payment_amount',
+                            'payment_status', 'payment_time', 'created_time')
 
     def create(self, validated_data):
         order_id = validated_data['order_id']
-        payment_id = utils.get_payments_id(order_id)
+        payment_id = utils.generate_payments_id(order_id)
         payment_amount = utils.get_payment_amount(order_id)
-        payment_time = utils.get_payment_time()
         payment = Payment(
             payment_id=payment_id,
             order_id=order_id,
             payment_amount=payment_amount,
-            payment_time=payment_time,
+            created_time=int(time()),
         )
         payment.save()
         return payment
@@ -82,6 +85,7 @@ class UnionPaySerializer(serializers.Serializer):
             return unionpay
 
         payment.unionpay_id = unionpay_id
+        payment.payment_time = unionpay_time
         payment.payment_status = 'p'
 
         with transaction.atomic():
